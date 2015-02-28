@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import argparse
 import json
+import os
 import random
 import requests
 import yaml
@@ -57,6 +58,9 @@ def find_all_images():
 
 
 def load_images():
+    if not os.path.isfile('images.json'):
+        print("Image list file not found, fetching it...")
+        return find_all_images()
     with open('images.json', 'r') as f:
         return json.loads(f.read())
 
@@ -75,3 +79,4 @@ elif args.load_images:
     images = load_images()
     image_id = random.choice(list(images.keys()))
     print(images[image_id])
+    print("http://commons.wikimedia.org?curid={0}".format(image_id))

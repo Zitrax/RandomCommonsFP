@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import argparse
+import json
+import random
 import requests
 import yaml
 from twython import Twython
@@ -29,7 +31,6 @@ def partial_image_list(cmcontinue=None):
     if "warnings" in data:
         print("WARNINGS:")
         print(yaml.dump(data["warnings"], default_flow_style=False))
-    #print(yaml.dump(data, default_flow_style=False))
 
     if "continue" in data:
         cmcontinue = data["continue"]["cmcontinue"]
@@ -40,7 +41,7 @@ def partial_image_list(cmcontinue=None):
     return cmcontinue, images
 
 
-def find_image():
+def find_all_images():
     # First collect a list of all images and dump to disk
     # Further uses can continue from where left off
     all_images = {}
@@ -50,14 +51,27 @@ def find_image():
         if cmcontinue is None or images is None:
             break
         cmcontinue, images = partial_image_list(cmcontinue)
-    print(all_images)
+    with open('images.json', 'w') as f:
+        f.write(json.dumps(all_images))
+    return all_images
+
+
+def load_images():
+    with open('images.json', 'r') as f:
+        return json.loads(f.read())
+
 
 parser = argparse.ArgumentParser(description='Bot for tweeting featured pictures from wikimedia commons.')
 parser.add_argument('--auth_url', action="store_true", help='Retrieve an auth url')
-parser.add_argument('--find_image', action="store_true", help='Find a commons image')
+parser.add_argument('--find_all_images', action="store_true", help='Retrieve the list of all images')
+parser.add_argument('--load_images', action="store_true", help='Load previously stored images')
 args = parser.parse_args()
 
 if args.auth_url:
     print(get_auth_url())
-elif args.find_image:
-    find_image()
+elif args.find_all_images:
+    find_all_images()
+elif args.load_images:
+    images = load_images()
+    image_id = random.choice(list(images.keys()))
+    print(images[image_id])

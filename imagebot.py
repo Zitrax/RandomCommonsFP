@@ -22,8 +22,11 @@ def get_auth_url():
 def partial_image_list(cmcontinue=None):
     payload = {"action": "query", "list": "categorymembers", "cmtype": "file", "format": "json", "continue": "",
                "cmsort": "timestamp", "cmlimit": "100", "cmtitle": "Category:Featured_pictures_on_Wikimedia_Commons"}
+    payload = {"action": "query", "generator": "categorymembers", "format": "json", "continue": "",
+               "prop": "imageinfo|revisions", "rvprop": "content", "iiprop": "url", "gcmlimit": "1",
+               "gcmtitle": "Category:Featured_pictures_on_Wikimedia_Commons", "gcmtype": "file"}
     if cmcontinue:
-        payload["cmcontinue"] = cmcontinue
+        payload["gcmcontinue"] = cmcontinue
 
     headers = {'User-Agent': 'ImageBot/0.1 (daniel@bengtssons.info)'}
     r = requests.get("http://commons.wikimedia.org/w/api.php", params=payload, headers=headers)
@@ -34,12 +37,23 @@ def partial_image_list(cmcontinue=None):
         print(yaml.dump(data["warnings"], default_flow_style=False))
 
     if "continue" in data:
-        cmcontinue = data["continue"]["cmcontinue"]
+        cmcontinue = data["continue"]["gcmcontinue"]
     else:
         cmcontinue = None
     print(cmcontinue)
-    images = {i["pageid"]: i["title"] for i in data["query"]["categorymembers"]}
+    #print(data)
+
+    images = {}
+    for page in data["query"]["pages"].values():
+        content = page["revisions"][0]["*"]
+        print(content)
+
+    images = {i["pageid"]: i["title"] for i in data["query"]["pages"].values()}
     return cmcontinue, images
+
+
+def description(content):
+        
 
 
 def find_all_images():
@@ -74,7 +88,8 @@ args = parser.parse_args()
 if args.auth_url:
     print(get_auth_url())
 elif args.find_all_images:
-    find_all_images()
+    #find_all_images()
+    print(partial_image_list())
 elif args.load_images:
     images = load_images()
     image_id = random.choice(list(images.keys()))

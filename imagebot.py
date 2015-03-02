@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import random
+import re
 import requests
 import yaml
 from twython import Twython
@@ -20,10 +21,8 @@ def get_auth_url():
 
 
 def partial_image_list(cmcontinue=None):
-    payload = {"action": "query", "list": "categorymembers", "cmtype": "file", "format": "json", "continue": "",
-               "cmsort": "timestamp", "cmlimit": "100", "cmtitle": "Category:Featured_pictures_on_Wikimedia_Commons"}
     payload = {"action": "query", "generator": "categorymembers", "format": "json", "continue": "",
-               "prop": "imageinfo|revisions", "rvprop": "content", "iiprop": "url", "gcmlimit": "1",
+               "prop": "imageinfo|revisions", "rvprop": "content", "iiprop": "url", "gcmlimit": "20",
                "gcmtitle": "Category:Featured_pictures_on_Wikimedia_Commons", "gcmtype": "file"}
     if cmcontinue:
         payload["gcmcontinue"] = cmcontinue
@@ -43,17 +42,19 @@ def partial_image_list(cmcontinue=None):
     print(cmcontinue)
     #print(data)
 
-    images = {}
-    for page in data["query"]["pages"].values():
+    def get_description(page):
         content = page["revisions"][0]["*"]
-        print(content)
+        return description(content)
 
-    images = {i["pageid"]: i["title"] for i in data["query"]["pages"].values()}
+    images = {i["pageid"]: {"title": i["title"], "desc": get_description(i)} for i in data["query"]["pages"].values()}
     return cmcontinue, images
 
 
 def description(content):
-        
+    m = re.search(r"description=.*?\{\{en\|(.*?)}}", content, re.DOTALL)
+    if m:
+        return m.group(1)
+    return None
 
 
 def find_all_images():

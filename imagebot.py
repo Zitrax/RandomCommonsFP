@@ -46,15 +46,22 @@ def partial_image_list(cmcontinue=None):
         content = page["revisions"][0]["*"]
         return description(content)
 
-    images = {i["pageid"]: {"title": i["title"], "desc": get_description(i)} for i in data["query"]["pages"].values()}
+    images = {i["pageid"]: {"title": i["title"],
+                            "desc": get_description(i),
+                            "url": i["imageinfo"][0]["url"]}
+              for i in data["query"]["pages"].values()}
     return cmcontinue, images
 
 
 def description(content):
-    m = re.search(r"description=.*?\{\{en\|(.*?)}}", content, re.DOTALL)
+    m = re.search(r"description=.*?\{\{en\|(?:1=)?(.*?)}}", content, re.DOTALL | re.IGNORECASE)
     if m:
-        return m.group(1)
+        return wiki_links_to_text(m.group(1))
     return None
+
+
+def wiki_links_to_text(txt):
+    return re.sub(r"\[{1,2}.*\|(.*?)\]{1,2}", r'\1', txt)
 
 
 def find_all_images():
@@ -90,7 +97,7 @@ if args.auth_url:
     print(get_auth_url())
 elif args.find_all_images:
     #find_all_images()
-    print(partial_image_list())
+    print(yaml.dump(partial_image_list()))
 elif args.load_images:
     images = load_images()
     image_id = random.choice(list(images.keys()))
